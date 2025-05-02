@@ -3,6 +3,7 @@ import Head from 'next/head';
 import ImageGenerator from '../app/components/ImageGenerator';
 import ApiKeyForm from '../app/components/ApiKeyForm';
 import TitleBar from '../app/components/TitleBar';
+import UpdateNotification from '../app/components/UpdateNotification';
 const models = require('../app/modules/models');
 
 export default function Home() {
@@ -179,6 +180,8 @@ export default function Home() {
         <main className="main-content">
           {renderContent()}
         </main>
+        
+        <UpdateNotification />
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 {
   "name": "pixelmuse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Electron app for AI image generation with multiple models",
   "main": "app/index.js",
   "repository": {
@@ -24,23 +24,40 @@
     },
     "files": [
       "app/**/*",
-      "out/**/*",
+      "renderer/out/**/*",
       "assets/**/*",
       "node_modules/**/*"
     ],
+    "asar": true,
     "win": {
       "target": "nsis",
-      "icon": "assets/icons/win/icon.ico"
+      "icon": "assets/icons/win/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/icons/mac/icon.icns"
+      "icon": "assets/icons/mac/icon.icns",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "assets/icons/png/512x512.png"
+      "icon": "assets/icons/png/512x512.png",
+      "artifactName": "${productName}-${version}.${ext}"
     },
-    "publish": null
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "repo": "PixelMuse",
+      "owner": "TheRealPerson98",
+      "releaseType": "release"
+    }
   },
   "keywords": [
     "electron",
@@ -53,6 +70,9 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.9.0",
+    "electron-is-dev": "^3.0.1",
+    "electron-log": "^5.1.0",
+    "electron-updater": "^6.2.1",
     "next": "^15.3.1",
     "node-fetch": "^2.7.0",
     "openai": "^4.97.0",
@@ -64,7 +84,6 @@
     "cross-env": "^7.0.3",
     "electron": "^36.1.0",
     "electron-builder": "^26.0.12",
-    "electron-is-dev": "^3.0.1",
     "wait-on": "^8.0.3"
   }
 }

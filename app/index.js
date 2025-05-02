@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
 const CustomStore = require('./modules/store');
+const { autoUpdater } = require('electron-updater');
 
 // Initialize custom store for persistent data storage
 const store = new CustomStore({
@@ -19,6 +20,72 @@ const getApiKeyStorageKey = (provider) => {
 
 // Global window reference to prevent garbage collection
 let mainWindow;
+
+// Configure auto updater
+function setupAutoUpdater() {
+  // Don't check for updates in development
+  if (isDev) {
+    console.log('Skipping auto-update checks in development mode');
+    return;
+  }
+
+  // Log update events
+  autoUpdater.logger = require('electron-log');
+  autoUpdater.logger.transports.file.level = 'info';
+  
+  // Configure auto updater
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Listen for update events
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for updates...');
+  });
+  
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info);
+    mainWindow.webContents.send('update-available', info);
+  });
+  
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('No updates available.', info);
+  });
+  
+  autoUpdater.on('download-progress', (progressObj) => {
+    const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+    console.log(logMessage);
+    mainWindow.webContents.send('update-progress', progressObj);
+  });
+  
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded');
+    mainWindow.webContents.send('update-downloaded', info);
+    
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Ready',
+      message: 'A new version has been downloaded. Restart the application to apply the updates.',
+      buttons: ['Restart', 'Later']
+    }).then((returnValue) => {
+      if (returnValue.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+  
+  autoUpdater.on('error', (err) => {
+    console.error('Error in auto-updater:', err);
+    mainWindow.webContents.send('update-error', err.message);
+  });
+  
+  // Check for updates
+  autoUpdater.checkForUpdates();
+  
+  // Check again every hour
+  setInterval(() => {
+    autoUpdater.checkForUpdates();
+  }, 60 * 60 * 1000);
+}
 
 // Create main window
 function createMainWindow() {
@@ -63,6 +130,8 @@ function createMainWindow() {
   // Show window when ready to prevent flashing
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    // Setup auto-updater once the window is ready
+    setupAutoUpdater();
   });
 
   // Remove the default menu bar
@@ -85,7 +154,24 @@ function createMainWindow() {
   });
 }
 
+// IPC handlers for updates
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev) {
+    return { success: false, message: 'Updates are disabled in development mode' };
+  }
+  
+  try {
+    await autoUpdater.checkForUpdates();
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to check for updates:', error);
+    return { success: false, error: error.message };
+  }
+});
 
+ipcMain.handle('restart-and-install', () => {
+  autoUpdater.quitAndInstall();
+});
 
 // Initialize app
 app.whenReady().then(() => {

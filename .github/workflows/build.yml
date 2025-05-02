@@ -8,6 +8,9 @@ on:
       - 'v*'
   workflow_dispatch:  # Allow manual triggering
 
+permissions:
+  contents: write  # This is crucial for creating releases and uploading assets
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -17,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,6 +45,7 @@ jobs:
         with:
           name: windows-${{ matrix.arch }}
           path: dist/*.exe
+          if-no-files-found: error
 
   build-linux:
     runs-on: ubuntu-latest
@@ -49,6 +55,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -72,12 +80,15 @@ jobs:
         with:
           name: linux-${{ matrix.arch }}
           path: dist/*.AppImage
+          if-no-files-found: error
 
   build-macos:
     runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -101,6 +112,7 @@ jobs:
         with:
           name: macos
           path: dist/*.dmg
+          if-no-files-found: error
 
   create-release:
     needs: [build-windows, build-linux, build-macos]
@@ -109,19 +121,38 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: PixelMuse ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Create Release
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/**/*.exe
             artifacts/**/*.dmg
             artifacts/**/*.AppImage
-          draft: false
-          prerelease: false
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

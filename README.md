@@ -71,6 +71,21 @@ To create a new release:
 3. Push the tag to GitHub: `git push origin v1.0.1`
 4. GitHub Actions will automatically build the app for all platforms and create a release with installable files
 
+## 🔄 Auto-Updates
+
+PixelMuse includes an automatic update system that:
+
+- Checks for updates when the app starts and periodically while running
+- Downloads updates automatically in the background
+- Notifies users when updates are ready to install
+- Provides a one-click option to install updates and restart
+
+When releasing a new version:
+1. Update the version number in `package.json`
+2. Push changes to the main branch
+3. Create and push a new tag with the new version
+4. GitHub Actions will build the release and the app will automatically detect and download the update
+
 ## 🔑 API Key Storage
 
 The application uses a custom storage solution to securely save your OpenAI API key to your local machine. The key is stored in the app's user data directory in a JSON file:
