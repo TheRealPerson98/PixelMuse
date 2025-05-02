@@ -26,7 +26,6 @@ let mainWindow;
 function setupAutoUpdater() {
   // Don't check for updates in development
   if (isDev) {
-    console.log('Skipping auto-update checks in development mode');
     return;
   }
 
@@ -40,26 +39,21 @@ function setupAutoUpdater() {
 
   // Listen for update events
   autoUpdater.on('checking-for-update', () => {
-    console.log('Checking for updates...');
   });
   
   autoUpdater.on('update-available', (info) => {
-    console.log('Update available:', info);
     mainWindow.webContents.send('update-available', info);
   });
   
   autoUpdater.on('update-not-available', (info) => {
-    console.log('No updates available.', info);
   });
   
   autoUpdater.on('download-progress', (progressObj) => {
     const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
-    console.log(logMessage);
     mainWindow.webContents.send('update-progress', progressObj);
   });
   
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded');
     mainWindow.webContents.send('update-downloaded', info);
     
     dialog.showMessageBox({
@@ -142,7 +136,12 @@ function createMainWindow() {
   const startUrl = isDev 
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../renderer/out/index.html')}`;
-  
+    
+  mainWindow.loadURL(startUrl).catch(err => {
+    console.error('Failed to load app:', err);
+    // Show an error message if we can't load the app
+    mainWindow.loadURL(`data:text/html,<html><body><h1>Error Loading Application</h1><p>${err.message}</p></body></html>`);
+  });
   
   // Open DevTools in development
   if (isDev) {
