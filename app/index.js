@@ -1,7 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const isDev = require('electron-is-dev');
+const isDev = process.env.NODE_ENV === 'development';
+
 const CustomStore = require('./modules/store');
 const { autoUpdater } = require('electron-updater');
 
@@ -99,7 +100,7 @@ function createMainWindow() {
   } else {
     iconPath = path.join(__dirname, '../assets/icons/png/512x512.png');
   }
-
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -142,7 +143,6 @@ function createMainWindow() {
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../renderer/out/index.html')}`;
   
-  mainWindow.loadURL(startUrl);
   
   // Open DevTools in development
   if (isDev) {

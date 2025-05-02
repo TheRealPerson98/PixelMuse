@@ -5,7 +5,7 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'export',
-  distDir: '.next',
+  distDir: 'renderer/out',
   assetPrefix: './',
   trailingSlash: true,
 };
