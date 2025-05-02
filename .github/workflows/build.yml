@@ -38,6 +38,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List dist directory contents
+        run: dir dist
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
@@ -73,11 +76,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List dist directory contents
+        run: ls -la dist/
+
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
-          path: dist/*-${{ matrix.arch }}.AppImage
+          path: dist/*.AppImage
           if-no-files-found: error
 
   build-macos:
@@ -104,6 +110,9 @@ jobs:
         run: npx electron-builder --mac --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List dist directory contents
+        run: ls -la dist/
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
