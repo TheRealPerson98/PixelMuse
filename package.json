@@ -1,0 +1,70 @@
+{
+  "name": "pixelmuse",
+  "version": "1.0.0",
+  "description": "Electron app for AI image generation with multiple models",
+  "main": "app/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheRealPerson98/PixelMuse.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run dev:next\" \"npm run dev:electron\"",
+    "dev:next": "next dev",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "build": "next build",
+    "dist": "npm run build && electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.electron.pixelmuse",
+    "productName": "PixelMuse",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "app/**/*",
+      "out/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icons/win/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icons/mac/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icons/png/512x512.png"
+    },
+    "publish": null
+  },
+  "keywords": [
+    "electron",
+    "nextjs",
+    "openai",
+    "pixelmuse",
+    "image-generation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "next": "^15.3.1",
+    "node-fetch": "^2.7.0",
+    "openai": "^4.97.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^36.1.0",
+    "electron-builder": "^26.0.12",
+    "electron-is-dev": "^3.0.1",
+    "wait-on": "^8.0.3"
+  }
+}
