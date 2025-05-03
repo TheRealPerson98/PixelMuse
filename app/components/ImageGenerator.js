@@ -657,25 +657,30 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       </div>
       
       {isGenerating && (
-        <div className="card text-center">
-          <div className="loading">
-            {batchMode 
-              ? `Processing images: ${batchProgress}/${totalBatchCount} complete` 
-              : 'Generating your image...'}
-          </div>
-          {batchMode && (
-            <div className="progress-bar-container">
-              <div 
-                className="progress-bar" 
-                style={{ width: `${Math.round((batchProgress / totalBatchCount) * 100)}%` }}
-              ></div>
+        <div className="card generation-card">
+          <div className="generation-container">
+            <div className="spinner-container">
+              <div className="spinner"></div>
             </div>
-          )}
-          <p className="text-secondary text-sm mt-4">
-            {batchMode 
-              ? "Images are being generated in parallel. This may take some time depending on the number of prompts."
-              : "This may take up to 15-30 seconds depending on the complexity of your prompt."}
-          </p>
+            <h3 className="generation-title">
+              {batchMode 
+                ? `Processing images: ${batchProgress}/${totalBatchCount}` 
+                : 'Creating your masterpiece...'}
+            </h3>
+            {batchMode && (
+              <div className="progress-bar-container">
+                <div 
+                  className="progress-bar" 
+                  style={{ width: `${Math.round((batchProgress / totalBatchCount) * 100)}%` }}
+                ></div>
+              </div>
+            )}
+            <p className="generation-message">
+              {batchMode 
+                ? "Images are being generated in parallel. This may take some time depending on the number of prompts."
+                : "This may take up to 15-30 seconds depending on the complexity of your prompt."}
+            </p>
+          </div>
         </div>
       )}
       
@@ -952,6 +957,73 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
           height: 100%;
           background-color: var(--primary-color);
           transition: width 0.3s ease;
+        }
+        
+        /* New styles for the generation loading state */
+        .generation-card {
+          padding: 30px;
+          text-align: center;
+          background: linear-gradient(135deg, var(--background-color) 0%, var(--background-light) 100%);
+          border: 1px solid var(--border-color);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          overflow: hidden;
+        }
+        
+        .generation-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .spinner-container {
+          margin-bottom: 20px;
+        }
+        
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 3px solid rgba(var(--primary-color-rgb), 0.2);
+          border-radius: 50%;
+          border-top-color: var(--primary-color);
+          animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .generation-title {
+          font-size: 1.4rem;
+          font-weight: 600;
+          margin-bottom: 16px;
+          color: var(--text-color);
+        }
+        
+        .generation-message {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          max-width: 500px;
+          margin: 10px auto 0;
+          line-height: 1.5;
+        }
+        
+        .progress-bar-container {
+          width: 100%;
+          max-width: 400px;
+          height: 10px;
+          background-color: rgba(var(--primary-color-rgb), 0.1);
+          border-radius: 6px;
+          overflow: hidden;
+          margin: 0 auto 16px;
+        }
+        
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, var(--primary-color) 0%, rgba(var(--primary-color-rgb), 0.8) 100%);
+          border-radius: 6px;
+          transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5);
         }
       `}</style>
     </div>
