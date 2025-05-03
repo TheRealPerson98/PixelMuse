@@ -28,6 +28,12 @@
       "assets/**/*",
       "node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
     "asar": true,
     "win": {
       "target": "nsis",
