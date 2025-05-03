@@ -45,7 +45,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
-          path: dist/*-${{ matrix.arch }}.exe
+          path: |
+            dist/*-${{ matrix.arch }}.exe
+            dist/latest*.yml
           if-no-files-found: error
 
   build-linux:
@@ -83,7 +85,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
-          path: dist/*.AppImage
+          path: |
+            dist/*.AppImage
+            dist/latest*.yml
           if-no-files-found: error
 
   build-macos:
@@ -118,7 +122,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: dist/*-*.dmg
+          path: |
+            dist/*-*.dmg
+            dist/latest*.yml
           if-no-files-found: error
 
   create-release:
@@ -149,6 +155,7 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.dmg
             artifacts/**/*.AppImage
+            artifacts/**/*.yml
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
