@@ -4,10 +4,15 @@ const models = require('../modules/models');
 const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
   const [modelId, setModelId] = useState(models.DEFAULT_MODEL);
   const [prompt, setPrompt] = useState('');
+  const [batchPrompts, setBatchPrompts] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
   const [imageSize, setImageSize] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [generatedImage, setGeneratedImage] = useState(null);
+  const [batchImages, setBatchImages] = useState([]);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [totalBatchCount, setTotalBatchCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const imageRef = useRef(null);
   const [providers, setProviders] = useState([]);
@@ -19,6 +24,8 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
   const [outputFormat, setOutputFormat] = useState('png');
   const [outputCompression, setOutputCompression] = useState(100);
   const [quality, setQuality] = useState('auto');
+  
+  const [batchProgress, setBatchProgress] = useState(0);
   
   // Load models when component mounts
   useEffect(() => {
@@ -45,6 +52,11 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
 
   const handleGenerate = async (e) => {
     e.preventDefault();
+    
+    if (batchMode) {
+      await handleBatchGenerate();
+      return;
+    }
     
     if (!prompt.trim()) {
       setError('Please enter a prompt');
@@ -141,6 +153,124 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
     }
   };
   
+  const handleBatchGenerate = async () => {
+    if (!batchPrompts.trim()) {
+      setError('Please enter at least one prompt');
+      return;
+    }
+    
+    const prompts = batchPrompts
+      .split('\n')
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+    
+    if (prompts.length === 0) {
+      setError('Please enter at least one valid prompt');
+      return;
+    }
+    
+    setIsGenerating(true);
+    setError('');
+    setBatchImages([]);
+    setTotalBatchCount(prompts.length);
+    setBatchProgress(0);
+    
+    try {
+      // Create an array of promises for all image generation requests
+      const generationPromises = prompts.map((currentPrompt, index) => {
+        // Return a promise for each prompt
+        return new Promise(async (resolve) => {
+          try {
+            console.log(`Starting batch image generation for prompt ${index + 1}/${prompts.length}`);
+            const selectedModel = models.getModel(modelId);
+            if (!selectedModel) {
+              throw new Error(`Model ${modelId} not found`);
+            }
+            
+            const providerApiKey = apiKey[selectedModel.provider];
+            
+            if (!providerApiKey) {
+              throw new Error(`Missing API key for ${selectedModel.provider}. Please add a ${selectedModel.provider} API key in Settings.`);
+            }
+                  
+            const options = {
+              apiKey: providerApiKey,
+              prompt: currentPrompt,
+              size: imageSize,
+              n: 1
+            };
+            
+            if (modelId === 'pixelmuse') {
+              options.background = background;
+              options.moderation = moderation;
+              options.outputFormat = outputFormat;
+              options.outputCompression = parseInt(outputCompression);
+              options.quality = quality;
+            }
+            
+            const result = await models.generateImage(modelId, options);
+            
+            if (result.images && result.images.length > 0) {
+              const image = result.images[0];
+              // Increment completed count
+              setBatchProgress(prev => prev + 1);
+              resolve({
+                success: true,
+                data: {
+                  url: image.url,
+                  prompt: currentPrompt,
+                  size: imageSize,
+                  model: result.model,
+                  provider: result.provider,
+                  revisedPrompt: image.revisedPrompt,
+                  timestamp: new Date().toISOString(),
+                  isBase64: image.isBase64
+                }
+              });
+              console.log(`Batch image ${index + 1} generated successfully`);
+            } else {
+              // Increment completed count even for failures
+              setBatchProgress(prev => prev + 1);
+              resolve({
+                success: false,
+                data: {
+                  error: 'Failed to generate image',
+                  prompt: currentPrompt
+                }
+              });
+            }
+          } catch (error) {
+            console.error(`Error generating batch image ${index + 1}:`, error);
+            // Increment completed count for errors
+            setBatchProgress(prev => prev + 1);
+            resolve({
+              success: false,
+              data: {
+                error: error.message || 'Failed to generate image',
+                prompt: currentPrompt
+              }
+            });
+          }
+        });
+      });
+      
+      // Execute all promises concurrently
+      const results = await Promise.all(generationPromises);
+      
+      // Process results and update state
+      const batchResults = results.map(result => result.data);
+      setBatchImages(batchResults);
+      
+      console.log(`All ${prompts.length} batch images processed`);
+      
+    } catch (error) {
+      console.error('Error in batch processing:', error);
+      setError(`Batch processing error: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
   const handleSaveImage = async () => {
     if (!generatedImage || !window.electron) return;
     
@@ -190,6 +320,68 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       setError(`Failed to save image: ${error.message}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+  
+  const handleSaveBatchImage = async (image, index) => {
+    if (!image || !window.electron) return;
+    
+    try {
+      const currentSavingIndex = index;
+      setBatchImages(prev => 
+        prev.map((img, i) => i === index ? {...img, isSaving: true} : img)
+      );
+      
+      const promptWords = image.prompt
+        .split(' ')
+        .slice(0, 5)
+        .join('-')
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '');
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const defaultName = `${promptWords}-${image.model}-${timestamp}.png`;
+      
+      let base64data;
+      
+      if (image.isBase64) {
+        base64data = image.url;
+      } else {
+        const response = await fetch(image.url);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        
+        base64data = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+      
+      const result = await window.electron.apiKeys.saveImage({
+        imageData: base64data,
+        defaultName: defaultName
+      });
+      
+      if (!result.success) {
+        setError(result.message || 'Failed to save image');
+      }
+    } catch (error) {
+      console.error('Error saving batch image:', error);
+      setError(`Failed to save image: ${error.message}`);
+    } finally {
+      setBatchImages(prev => 
+        prev.map((img, i) => i === index ? {...img, isSaving: false} : img)
+      );
+    }
+  };
+  
+  const handleSaveAllBatchImages = async () => {
+    for (let i = 0; i < batchImages.length; i++) {
+      const image = batchImages[i];
+      // Skip images that failed to generate
+      if (!image.error) {
+        await handleSaveBatchImage(image, i);
+      }
     }
   };
   
@@ -283,17 +475,51 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
             </div>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="prompt" className="form-label">Prompt</label>
-            <textarea
-              id="prompt"
-              className="input textarea"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the image you want to generate..."
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="batch-mode"
+              className="mr-2"
+              checked={batchMode}
+              onChange={(e) => setBatchMode(e.target.checked)}
               disabled={isGenerating}
             />
+            <label htmlFor="batch-mode" className="text-sm font-medium">
+              Batch Mode (Generate multiple images)
+            </label>
           </div>
+          
+          {!batchMode ? (
+            <div className="form-group">
+              <label htmlFor="prompt" className="form-label">Prompt</label>
+              <textarea
+                id="prompt"
+                className="input textarea"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe the image you want to generate..."
+                disabled={isGenerating}
+              />
+            </div>
+          ) : (
+            <div className="form-group">
+              <label htmlFor="batch-prompts" className="form-label">
+                Batch Prompts (one per line)
+              </label>
+              <textarea
+                id="batch-prompts"
+                className="input textarea"
+                value={batchPrompts}
+                onChange={(e) => setBatchPrompts(e.target.value)}
+                placeholder="Enter multiple prompts, one per line..."
+                rows={5}
+                disabled={isGenerating}
+              />
+              <p className="text-xs text-secondary mt-1">
+                Each line will generate a separate image
+              </p>
+            </div>
+          )}
           
           <div className="form-group">
             <label htmlFor="image-size" className="form-label">Image Size</label>
@@ -413,9 +639,9 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
             <button 
               type="submit" 
               className="button button-primary"
-              disabled={isGenerating || !prompt.trim()}
+              disabled={isGenerating || (batchMode ? !batchPrompts.trim() : !prompt.trim())}
             >
-              {isGenerating ? 'Generating...' : 'Generate Image'}
+              {isGenerating ? 'Generating...' : batchMode ? 'Generate Images' : 'Generate Image'}
             </button>
             
             {error && (
@@ -432,14 +658,28 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       
       {isGenerating && (
         <div className="card text-center">
-          <div className="loading">Generating your image...</div>
+          <div className="loading">
+            {batchMode 
+              ? `Processing images: ${batchProgress}/${totalBatchCount} complete` 
+              : 'Generating your image...'}
+          </div>
+          {batchMode && (
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${Math.round((batchProgress / totalBatchCount) * 100)}%` }}
+              ></div>
+            </div>
+          )}
           <p className="text-secondary text-sm mt-4">
-            This may take up to 15-30 seconds depending on the complexity of your prompt.
+            {batchMode 
+              ? "Images are being generated in parallel. This may take some time depending on the number of prompts."
+              : "This may take up to 15-30 seconds depending on the complexity of your prompt."}
           </p>
         </div>
       )}
       
-      {generatedImage && !isGenerating && (
+      {!batchMode && generatedImage && !isGenerating && (
         <div className="card">
           <h3>Generated Image</h3>
           <div className="flex justify-between items-center mb-2">
@@ -484,6 +724,70 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
                 Copy Prompt
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {batchMode && batchImages.length > 0 && !isGenerating && (
+        <div className="card">
+          <div className="flex justify-between items-center mb-4">
+            <h3>Generated Batch Images</h3>
+            <button 
+              className="button button-primary"
+              onClick={handleSaveAllBatchImages}
+            >
+              Save All Images
+            </button>
+          </div>
+          
+          <div className="batch-images-grid">
+            {batchImages.map((image, index) => (
+              <div key={index} className="batch-image-card">
+                {image.error ? (
+                  <div className="batch-image-error">
+                    <p className="text-sm" style={{ color: 'var(--danger-color)' }}>
+                      Error: {image.error}
+                    </p>
+                    <p className="text-xs text-secondary">Prompt: {image.prompt}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="batch-image-container">
+                      <img 
+                        src={image.url} 
+                        alt={image.prompt}
+                        className="batch-image"
+                      />
+                    </div>
+                    <div className="batch-image-info">
+                      <p className="text-xs text-secondary">
+                        <strong>Prompt:</strong> {image.prompt}
+                      </p>
+                      <p className="text-xs text-secondary">
+                        <strong>Model:</strong> {image.model}
+                      </p>
+                      <div className="batch-image-controls">
+                        <button 
+                          className="button button-secondary button-small"
+                          onClick={() => handleSaveBatchImage(image, index)}
+                          disabled={image.isSaving}
+                        >
+                          {image.isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button 
+                          className="button button-secondary button-small"
+                          onClick={() => {
+                            navigator.clipboard.writeText(image.prompt);
+                          }}
+                        >
+                          Copy Prompt
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -577,6 +881,79 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
           </div>
         </div>
       )}
+      
+      <style jsx>{`
+        .batch-images-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 20px;
+          margin-top: 20px;
+        }
+        
+        .batch-image-card {
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          overflow: hidden;
+          transition: transform 0.2s;
+        }
+        
+        .batch-image-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .batch-image-container {
+          height: 200px;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        .batch-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .batch-image-info {
+          padding: 12px;
+        }
+        
+        .batch-image-error {
+          padding: 20px 12px;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+        }
+        
+        .batch-image-controls {
+          display: flex;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        
+        .button-small {
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+        
+        .progress-bar-container {
+          width: 100%;
+          height: 8px;
+          background-color: var(--background-light);
+          border-radius: 4px;
+          margin: 16px 0;
+          overflow: hidden;
+        }
+        
+        .progress-bar {
+          height: 100%;
+          background-color: var(--primary-color);
+          transition: width 0.3s ease;
+        }
+      `}</style>
     </div>
   );
 };

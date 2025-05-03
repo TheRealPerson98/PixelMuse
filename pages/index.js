@@ -41,7 +41,6 @@ export default function Home() {
             }
           }
           
-          logApiKeyStatus(keys, "Loaded");
           setApiKeys(keys);
         }
         setIsLoading(false);
