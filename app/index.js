@@ -62,7 +62,8 @@ function setupAutoUpdater() {
       buttons: ['Restart', 'Later']
     }).then((returnValue) => {
       if (returnValue.response === 0) {
-        autoUpdater.quitAndInstall();
+        // Properly close all windows before installing
+        safelyQuitAndInstall();
       }
     });
   });
@@ -79,6 +80,26 @@ function setupAutoUpdater() {
   setInterval(() => {
     autoUpdater.checkForUpdates();
   }, 60 * 60 * 1000);
+}
+
+// Safely close all windows and install update
+function safelyQuitAndInstall() {
+  // Force close all windows
+  BrowserWindow.getAllWindows().forEach(window => {
+    if (!window.isDestroyed()) {
+      window.removeAllListeners('close');
+      window.close();
+    }
+  });
+  
+  // Give a short delay to ensure windows are closed
+  setTimeout(() => {
+    // Set a flag to prevent the standard shutdown behavior
+    app.isQuitting = true;
+    
+    // Install the update and restart
+    autoUpdater.quitAndInstall(true, true);
+  }, 300);
 }
 
 // Create main window
@@ -168,7 +189,7 @@ ipcMain.handle('check-for-updates', async () => {
 });
 
 ipcMain.handle('restart-and-install', () => {
-  autoUpdater.quitAndInstall();
+  safelyQuitAndInstall();
 });
 
 // Initialize app
@@ -184,7 +205,7 @@ app.whenReady().then(() => {
 
 // Quit the app when all windows are closed (except on macOS)
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' || app.isQuitting) {
     app.quit();
   }
 });
