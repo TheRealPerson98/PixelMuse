@@ -33,6 +33,13 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
+      - name: Verify workspace structure
+        run: |
+          echo "Root directory:"
+          ls -la
+          echo "Assets directory (if exists):"
+          ls -la assets || echo "Assets directory not found"
+
       - name: Verify assets directory
         run: |
           ls -la assets/icons/win
@@ -77,6 +84,13 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
+      - name: Verify workspace structure
+        run: |
+          echo "Root directory:"
+          ls -la
+          echo "Assets directory (if exists):"
+          ls -la assets || echo "Assets directory not found"
+
       - name: Verify assets directory
         run: |
           ls -la assets/icons/win
@@ -117,6 +131,13 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
+
+      - name: Verify workspace structure
+        run: |
+          echo "Root directory:"
+          ls -la
+          echo "Assets directory (if exists):"
+          ls -la assets || echo "Assets directory not found"
 
       - name: Verify assets directory
         run: |
