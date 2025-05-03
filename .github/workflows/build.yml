@@ -33,19 +33,6 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      - name: Verify workspace structure
-        run: |
-          echo "Root directory:"
-          ls -la
-          echo "Assets directory (if exists):"
-          ls -la assets || echo "Assets directory not found"
-
-      - name: Verify assets directory
-        run: |
-          ls -la assets/icons/win
-          ls -la assets/icons/mac
-          ls -la assets/icons/png
-
       - name: Build Windows app
         run: npx electron-builder --win --${{ matrix.arch }} --publish never
         env:
@@ -84,19 +71,6 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      - name: Verify workspace structure
-        run: |
-          echo "Root directory:"
-          ls -la
-          echo "Assets directory (if exists):"
-          ls -la assets || echo "Assets directory not found"
-
-      - name: Verify assets directory
-        run: |
-          ls -la assets/icons/win
-          ls -la assets/icons/mac
-          ls -la assets/icons/png
-
       - name: Build Linux app
         run: npx electron-builder --linux --${{ matrix.arch }} --publish never
         env:
@@ -131,19 +105,6 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
-
-      - name: Verify workspace structure
-        run: |
-          echo "Root directory:"
-          ls -la
-          echo "Assets directory (if exists):"
-          ls -la assets || echo "Assets directory not found"
-
-      - name: Verify assets directory
-        run: |
-          ls -la assets/icons/win
-          ls -la assets/icons/mac
-          ls -la assets/icons/png
 
       - name: Build macOS app
         run: npx electron-builder --mac --publish never
