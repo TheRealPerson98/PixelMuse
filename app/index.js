@@ -49,7 +49,6 @@ function setupAutoUpdater() {
   });
   
   autoUpdater.on('download-progress', (progressObj) => {
-    const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
     mainWindow.webContents.send('update-progress', progressObj);
   });
   

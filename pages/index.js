@@ -12,20 +12,12 @@ export default function Home() {
   const [providers, setProviders] = useState([]);
   const [isEditingKeys, setIsEditingKeys] = useState(false);
   
-  // Debug function to log API keys and their status
-  const logApiKeyStatus = (keys, source) => {
-    console.log(`API Keys (${source}):`, Object.keys(keys));
-    Object.entries(keys).forEach(([provider, key]) => {
-      console.log(`- ${provider}: ${key ? '✓ (Set)' : '✗ (Empty)'}`);
-    });
-  };
   
   // Load the API keys from electron-store on component mount
   useEffect(() => {
     const loadApiKeys = async () => {
       try {
         setIsLoading(true);
-        console.log("Loading API keys...");
         
         // Access the Electron API through the contextBridge
         if (window.electron) {
@@ -33,16 +25,13 @@ export default function Home() {
           const allProviders = models.getProviders();
           const providerNames = Object.keys(allProviders);
           setProviders(providerNames);
-          console.log("Available providers:", providerNames);
           
           // Load API keys for all providers
           const keys = {};
           
           for (const provider of providerNames) {
             try {
-              console.log(`Fetching key for ${provider}...`);
               const apiKey = await window.electron.apiKeys.getApiKey(provider);
-              console.log(`Result for ${provider}:`, apiKey ? "Key found" : "No key");
               
               if (apiKey) {
                 keys[provider] = apiKey;
@@ -68,8 +57,6 @@ export default function Home() {
   // Save API keys to electron-store
   const handleSaveApiKeys = async (newKeys, stayInEditingMode = false) => {
     try {
-      console.log("Saving API keys...");
-      logApiKeyStatus(newKeys, "To Save");
       
       if (window.electron) {
         // First, determine which keys were removed and should be cleared
@@ -78,14 +65,12 @@ export default function Home() {
         
         // Find providers that were in the old keys but not in the new keys
         const removedProviders = existingProviders.filter(p => !newProviders.includes(p));
-        console.log("Providers to remove:", removedProviders);
         
         // Save all providers - both new/updated and removed ones
         const allProviders = [...new Set([...existingProviders, ...newProviders])];
         
         for (const provider of allProviders) {
           const key = newKeys[provider] || ''; // Empty string to clear removed keys
-          console.log(`Saving key for ${provider}:`, key ? "Has value" : "Empty/removed");
           
           try {
             await window.electron.apiKeys.saveApiKey({ 
@@ -104,9 +89,7 @@ export default function Home() {
         if (!stayInEditingMode) {
           setIsEditingKeys(false);
         }
-        
-        // Log the final state
-        logApiKeyStatus(newKeys, "Saved");
+    
         
         return true;
       }

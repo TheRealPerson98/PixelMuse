@@ -1,6 +1,6 @@
 {
   "name": "pixelmuse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Electron app for AI image generation with multiple models",
   "main": "app/index.js",
   "repository": {
