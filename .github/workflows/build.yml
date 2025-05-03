@@ -41,6 +41,14 @@ jobs:
       - name: List dist directory contents
         run: dir dist
 
+      # Rename latest.yml file for ARM64 to avoid naming conflicts
+      - name: Rename latest.yml for ARM64
+        if: matrix.arch == 'arm64'
+        run: |
+          if (Test-Path dist\latest.yml) {
+            Copy-Item -Path dist\latest.yml -Destination dist\latest-win-arm64.yml
+          }
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
@@ -146,16 +154,35 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+      
+      # Rename any duplicate files to ensure unique names in release
+      - name: Ensure unique filenames
+        run: |
+          # Create directory for release assets
+          mkdir -p release-assets
+          
+          # Find and copy all files with unique names
+          find artifacts -type f -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.yml" | while read file; do
+            filename=$(basename "$file")
+            platform=$(echo "$file" | grep -oP 'artifacts/\K[^/]+')
+            
+            # If it's latest.yml from windows-x64, keep the original name
+            if [[ "$file" == *"windows-x64"*"/latest.yml" ]]; then
+              cp "$file" "release-assets/latest.yml"
+            # For all other latest.yml files, add platform prefix if not already there
+            elif [[ "$filename" == "latest.yml" ]]; then
+              cp "$file" "release-assets/latest-$platform.yml"
+            # Copy all other files as is
+            else
+              cp "$file" "release-assets/$filename"
+            fi
+          done
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: PixelMuse ${{ steps.get_version.outputs.VERSION }}
-          files: |
-            artifacts/**/*.exe
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-            artifacts/**/*.yml
+          files: release-assets/*
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
