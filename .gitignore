@@ -49,8 +49,3 @@ Desktop.ini
 *.njsproj
 *.sln
 *.sw?
-
-# Assets
-/assets/icons/win/icon.ico
-/assets/icons/mac/icon.icns
-/assets/icons/png/512x512.png 
