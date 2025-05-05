@@ -215,9 +215,9 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
               setBatchProgress(prev => prev + 1);
               
               // Check if the prompt has a custom filename marker
-              const filenameMatch = currentPrompt.match(/#\$(\w+)$/);
+              const filenameMatch = currentPrompt.match(/#\$([\w\-\.]+)$/);
               const displayPrompt = filenameMatch 
-                ? currentPrompt.replace(/#\$\w+$/, '').trim()
+                ? currentPrompt.replace(/#\$[\w\-\.]+$/, '').trim()
                 : currentPrompt;
               
               resolve({
@@ -341,14 +341,14 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       let defaultName;
       
       // Check if the prompt contains the filename indicator #$
-      const filenameMatch = image.prompt.match(/#\$(\w+)$/);
+      const filenameMatch = image.prompt.match(/#\$([\w\-\.]+)$/);
       
       if (filenameMatch) {
         // Use the custom filename
         defaultName = `${filenameMatch[1]}.png`;
         
         // Clean the prompt for display by removing the #$ part
-        const cleanedPrompt = image.prompt.replace(/#\$\w+$/, '').trim();
+        const cleanedPrompt = image.prompt.replace(/#\$[\w\-\.]+$/, '').trim();
         
         // Update the prompt in the batch images array
         setBatchImages(prev => 
@@ -903,7 +903,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
               <div className="settings-section">
                 <h4>About</h4>
                 <p className="text-secondary">
-                  PixelMuse v1.0.5<br/>
+                  PixelMuse v1.0.6<br/>
                   Supports multiple image generation models from OpenAI and Stability AI.
                 </p>
               </div>
