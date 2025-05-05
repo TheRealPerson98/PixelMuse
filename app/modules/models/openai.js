@@ -63,9 +63,7 @@ const gptImage1 = {
     quality = 'auto'
   }) {
     const openai = createOpenAIClient(apiKey);
-    
-    console.log(`Generating image with PixelMuse, prompt: ${prompt}, size: ${size}`);
-    
+        
     try {
       const response = await openai.images.generate({
         model: 'gpt-image-1',
@@ -107,12 +105,12 @@ const gptImage1 = {
             isBase64: true  // Flag to indicate this is a base64 image
           };
         }),
-        model: 'pixelmuse',
+        model: 'gpt-image-1',
         provider: 'OpenAI',
         usage: response.usage  // Include token usage info
       };
     } catch (error) {
-      console.error('OpenAI PixelMuse generation error:', error);
+      console.error('OpenAI GPT-image-1 generation error:', error);
       throw error;
     }
   }
@@ -219,7 +217,7 @@ const dalle2 = {
 
 // Export all OpenAI models
 module.exports = {
-  'pixelmuse': gptImage1,
+  'gpt-image-1': gptImage1,
   'dall-e-3': dalle3,
   'dall-e-2': dalle2
 }; 

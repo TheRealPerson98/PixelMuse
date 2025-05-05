@@ -18,7 +18,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
   const [providers, setProviders] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   
-  // New state for PixelMuse additional options
+  // New state for gpt-image-1 additional options
   const [background, setBackground] = useState('auto');
   const [moderation, setModeration] = useState('auto');
   const [outputFormat, setOutputFormat] = useState('png');
@@ -93,8 +93,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       };
       
       // Add specific options if this is a specialized model
-      if (modelId === 'pixelmuse') {
-        console.log(`Adding PixelMuse-specific options`);
+      if (modelId === 'gpt-image-1') {
         options.background = background;
         options.moderation = moderation;
         options.outputFormat = outputFormat;
@@ -200,7 +199,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
               n: 1
             };
             
-            if (modelId === 'pixelmuse') {
+            if (modelId === 'gpt-image-1') {
               options.background = background;
               options.moderation = moderation;
               options.outputFormat = outputFormat;
@@ -214,11 +213,19 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
               const image = result.images[0];
               // Increment completed count
               setBatchProgress(prev => prev + 1);
+              
+              // Check if the prompt has a custom filename marker
+              const filenameMatch = currentPrompt.match(/#\$(\w+)$/);
+              const displayPrompt = filenameMatch 
+                ? currentPrompt.replace(/#\$\w+$/, '').trim()
+                : currentPrompt;
+              
               resolve({
                 success: true,
                 data: {
                   url: image.url,
                   prompt: currentPrompt,
+                  displayPrompt: displayPrompt,
                   size: imageSize,
                   model: result.model,
                   provider: result.provider,
@@ -290,7 +297,6 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
       
       let base64data;
       
-      // Check if the image is already in base64 format (PixelMuse)
       if (generatedImage.isBase64) {
         // The URL is already a data URL containing the base64 data
         base64data = generatedImage.url;
@@ -332,15 +338,34 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
         prev.map((img, i) => i === index ? {...img, isSaving: true} : img)
       );
       
-      const promptWords = image.prompt
-        .split(' ')
-        .slice(0, 5)
-        .join('-')
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, '');
+      let defaultName;
       
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const defaultName = `${promptWords}-${image.model}-${timestamp}.png`;
+      // Check if the prompt contains the filename indicator #$
+      const filenameMatch = image.prompt.match(/#\$(\w+)$/);
+      
+      if (filenameMatch) {
+        // Use the custom filename
+        defaultName = `${filenameMatch[1]}.png`;
+        
+        // Clean the prompt for display by removing the #$ part
+        const cleanedPrompt = image.prompt.replace(/#\$\w+$/, '').trim();
+        
+        // Update the prompt in the batch images array
+        setBatchImages(prev => 
+          prev.map((img, i) => i === index ? {...img, displayPrompt: cleanedPrompt} : img)
+        );
+      } else {
+        // Use the default filename generation
+        const promptWords = image.prompt
+          .split(' ')
+          .slice(0, 5)
+          .join('-')
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, '');
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        defaultName = `${promptWords}-${image.model}-${timestamp}.png`;
+      }
       
       let base64data;
       
@@ -421,7 +446,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
 
   // Helper to check if current model is PixelMuse
   const isGptImage1Model = () => {
-    return modelId === 'pixelmuse';
+    return modelId === 'gpt-image-1';
   };
   
   // Helper to get additional options for the current model
@@ -766,7 +791,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
                     </div>
                     <div className="batch-image-info">
                       <p className="text-xs text-secondary">
-                        <strong>Prompt:</strong> {image.prompt}
+                        <strong>Prompt:</strong> {image.displayPrompt || image.prompt}
                       </p>
                       <p className="text-xs text-secondary">
                         <strong>Model:</strong> {image.model}
@@ -782,7 +807,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
                         <button 
                           className="button button-secondary button-small"
                           onClick={() => {
-                            navigator.clipboard.writeText(image.prompt);
+                            navigator.clipboard.writeText(image.displayPrompt || image.prompt);
                           }}
                         >
                           Copy Prompt
@@ -878,7 +903,7 @@ const ImageGenerator = ({ apiKey, onResetApiKey, onEditApiKeys }) => {
               <div className="settings-section">
                 <h4>About</h4>
                 <p className="text-secondary">
-                  PixelMuse v1.0.0<br/>
+                  PixelMuse v1.0.5<br/>
                   Supports multiple image generation models from OpenAI and Stability AI.
                 </p>
               </div>

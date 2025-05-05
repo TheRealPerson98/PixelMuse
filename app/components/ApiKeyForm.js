@@ -280,7 +280,7 @@ const ApiKeyForm = ({ onSave, existingKeys = {}, onCancel }) => {
             </p>
             {currentProvider === 'OpenAI' && (
               <p>
-                OpenAI offers multiple image generation models, including GPT-image-1 (PixelMuse), DALL-E 3, and DALL-E 2.
+                OpenAI offers multiple image generation models, including GPT-image-1 (gpt-image-1), DALL-E 3, and DALL-E 2.
               </p>
             )}
             {currentProvider === 'Stability AI' && (

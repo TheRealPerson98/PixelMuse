@@ -22,7 +22,7 @@ const PROVIDERS = {
 };
 
 // Default model to use
-const DEFAULT_MODEL = 'pixelmuse';
+const DEFAULT_MODEL = 'gpt-image-1';
 
 /**
  * Get all available models

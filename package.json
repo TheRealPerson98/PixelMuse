@@ -80,6 +80,7 @@
     "next": "^15.3.1",
     "node-fetch": "^2.7.0",
     "openai": "^4.97.0",
+    "pixelmuse": "file:",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
