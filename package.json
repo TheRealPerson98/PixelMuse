@@ -1,11 +1,11 @@
 {
   "name": "pixelmuse",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Electron app for AI image generation with multiple models",
   "main": "app/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheRealPerson98/PixelMuse.git"
+    "url": "https://github.com/thejacedev/PixelMuse.git"
   },
   "scripts": {
     "start": "electron .",
@@ -61,7 +61,7 @@
     "publish": {
       "provider": "github",
       "repo": "PixelMuse",
-      "owner": "TheRealPerson98",
+      "owner": "thejacedev",
       "releaseType": "release"
     }
   },

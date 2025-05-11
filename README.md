@@ -30,7 +30,7 @@
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/TheRealPerson98/PixelMuse.git
+git clone https://github.com/thejacedev/PixelMuse.git
 cd pixelmuse
 npm install
 ```
